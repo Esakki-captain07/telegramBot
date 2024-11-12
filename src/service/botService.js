@@ -28,7 +28,7 @@ const postMovies = async (req, res) => {
     }
 };
 
-const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
+export const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
 
 
 
