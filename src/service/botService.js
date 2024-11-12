@@ -1,12 +1,10 @@
 import botModel from "../model/botModel.js";
 import { Telegraf } from "telegraf";
-import dotenv from 'dotenv';
-dotenv.config();
+import 'dotenv/config.js';
 import authenticateUser from "../common/auth.js";
 
-let fileIdForMovie = null;
+let fileIdForMovie = null; 
 
-// Route handler for posting movies
 const postMovies = async (req, res) => {
     try {
         const { title, rating, fileId, versions, description, category, movieUrl } = req.body;
@@ -30,23 +28,20 @@ const postMovies = async (req, res) => {
     }
 };
 
-
-
-// Initialize Telegraf Bot
 const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
 
-// Command to prompt user for movie upload
+
+
 bot.command("upload_movie", authenticateUser, async (ctx) => {
     await ctx.reply("Please upload the movie file as a document and provide title, rating, and description in the caption.");
 });
 
-// Handle movie document upload
 bot.on("document", async (ctx) => {
     const file = ctx.message.document;
     const caption = ctx.message.caption || "";
 
     if (!caption) {
-        await ctx.reply('Please provide movie details in the caption in the format: "Title; Rating; Description; Language; Quality".');
+        await ctx.reply('Please provide the movie details in the caption with quality information. Example: "Movie Title; Rating; Description; Language; Quality (e.g., 720p or 1080p)"');
         return;
     }
 
@@ -54,7 +49,7 @@ bot.on("document", async (ctx) => {
     const [title, rating, description, language, quality] = movieDetails;
 
     if (!title || !rating || !description || !language || !quality) {
-        return ctx.reply("Missing details! Please use the format: Title; Rating; Description; Language; Quality.");
+        return ctx.reply("Please provide all required details in the format: Title; Rating; Description; Language; Quality.");
     }
 
     try {
@@ -89,60 +84,75 @@ bot.on("document", async (ctx) => {
     }
 });
 
-// Handle text queries in chat
 bot.on('text', async (ctx) => {
     const userMessage = ctx.message.text.toLowerCase();
-    const chatType = ctx.chat.type;
+    const chatType = ctx.chat.type;  
 
+    console.log("Full Chat Object:", ctx.chat);
     console.log("Chat Type:", chatType);
     console.log("User Message:", userMessage);
 
     if (chatType === 'private') {
-        await ctx.reply(`Please request movies in the group: ${process.env.MAIN_CHANNEL_LINK}
+        console.log("Message is from a private chat");
 
+        await ctx.reply(`Please ask for movies in the movie request group: ${process.env.MAIN_CHANNEL_LINK}
+            
 You can also follow us on Instagram:
 https://www.instagram.com/captain_love_edits`);
         return; 
     }
 
     if (chatType === 'supergroup' || chatType === 'group') {
+        console.log("Message is from a supergroup/group");
+
         try {
             const movie = await botModel.findOne({ title: new RegExp(userMessage, 'i') });
 
             if (movie) {
-                let optionsMessage = `Found: ${movie.title}\nDescription: ${movie.description}\nRating: ${movie.rating}\nChoose quality and language:`;
+                let optionsMessage = `Found: ${movie.title}\nDescription: ${movie.description}\nRating: ${movie.rating}\nChoose the quality and language:`;
 
                 const buttons = movie.versions.map((version) => ([{
                     text: `${version.quality} - ${version.language}`,
                     callback_data: `${movie._id}:${version.quality}:${version.language}`,
                 }]));
 
+                console.log("Movie found, sending options...");
                 await ctx.reply(optionsMessage, {
                     reply_markup: {
                         inline_keyboard: buttons,
                     },
                 });
-            } else {
-                await ctx.reply(`Movie not found in the database.
 
-Request unavailable movies in the admin section, or follow us on Instagram:
+            } else {
+                console.log("Movie not found.");
+                await ctx.reply(`Sorry, I couldn't find that movie in the database.
+                                
+This movie is not available.
+Please ask for movies in the admin section,
+and you will receive the movie within 2 hours
 https://www.instagram.com/captain_love_edits`);
             }
+
         } catch (error) {
             console.error("Error retrieving movie:", error);
-            await ctx.reply("Error retrieving the movie. Please try again later.");
+            await ctx.reply("There was an error retrieving the movie. Please try again later.");
         }
     }
 });
 
-// Handle callback queries for specific movie version
+
+
+
+
+
 bot.on('callback_query', async (ctx) => {
     const [movieId, quality, language] = ctx.callbackQuery.data.split(':');
-    console.log(`Received movieId: ${movieId}, quality: ${quality}, language: ${language}`);
+    console.log(`Received movieId: ${movieId}, quality: ${quality}, language: ${language}`); 
 
     try {
         const movie = await botModel.findById(movieId);
         if (!movie) {
+            console.log("Movie not found for ID:", movieId);  
             return await ctx.reply("Movie not found.");
         }
 
@@ -150,23 +160,29 @@ bot.on('callback_query', async (ctx) => {
             (v) => v.quality === quality && v.language === language
         );
 
-        if (selectedVersion?.fileId) {
+        if (selectedVersion && selectedVersion.fileId) {
+            console.log(`Sending fileId: ${selectedVersion.fileId} to user: ${ctx.from.id}`);
             await ctx.telegram.sendDocument(ctx.from.id, selectedVersion.fileId, {
                 caption: `Here is the requested movie: ${movie.title} (${quality} - ${language})`,
             });
 
-            const botChannelLink = `https://t.me/${process.env.BOT_USERNAME}`;
+            const buttonText = "Go to Bot's Channel"; 
+            const botChannelLink = `https://t.me/${process.env.BOT_USERNAME}`; 
             const keyboard = {
                 inline_keyboard: [
-                    [{ text: "Go to Bot's Channel", url: botChannelLink }]
+                    [
+                        { text: buttonText, url: botChannelLink }
+                    ]
                 ]
             };
 
             await ctx.reply(
-                `The movie "${movie.title}" (${quality} - ${language}) has been shared with you. Visit the bot's channel for more content.`,
+                `The movie "${movie.title}" (${quality} - ${language}) has been shared directly with you. ` +
+                `Click the button below to visit the bot's channel and find more content.`,
                 { reply_markup: keyboard }
             );
         } else {
+            console.log("Selected version or fileId not found");
             await ctx.reply("Sorry, the requested version is not available.");
         }
     } catch (error) {
@@ -175,6 +191,7 @@ bot.on('callback_query', async (ctx) => {
     }
 });
 
+bot.launch();
 
 export default {
     postMovies
