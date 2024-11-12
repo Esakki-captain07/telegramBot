@@ -15,7 +15,7 @@ app.use(routes);
 async function initializeBot() {
     try {
         await bot.telegram.deleteWebhook();
-        await bot.telegram.setWebhook(`https://telegram-bot-git-master-esakki-captain07s-projects.vercel.app/?vercelToolbarCode=7ivt3h2NIUDcVso/bot${process.env.TELEGRAM_BOT_TOKEN}`);
+        await bot.telegram.setWebhook(`https://telegram-jx91ytnq2-esakki-captain07s-projects.vercel.app/bot${process.env.TELEGRAM_BOT_TOKEN}`);
         console.log('Webhook set successfully');
     } catch (error) {
         console.error("Error setting up bot:", error);
