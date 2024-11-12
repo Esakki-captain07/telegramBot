@@ -12,7 +12,7 @@ const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
 bot.telegram.deleteWebhook()
     .then(() => {
         // Set the new webhook
-        return bot.telegram.setWebhook(`https://telegrambot-yqfi.onrender.com/bot${process.env.TELEGRAM_BOT_TOKEN}`);
+        return bot.telegram.setWebhook(`https://devoted-maggy-esakkiraj-ae4fe014.koyeb.app/bot${process.env.TELEGRAM_BOT_TOKEN}`);
     })
     .then(() => console.log('Webhook set successfully'))
     .catch(err => console.error('Error setting webhook:', err));
