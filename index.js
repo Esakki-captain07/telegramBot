@@ -23,11 +23,15 @@ app.use(cors());
 app.use(routes);
 
 app.post(`/bot${process.env.TELEGRAM_BOT_TOKEN}`, (req, res) => {
-    console.log('Incoming webhook:', req.body);
-    bot.handleUpdate(req.body);
+    console.log('Incoming webhook:', JSON.stringify(req.body, null, 2));
+    bot.handleUpdate(req.body)
+        .then(() => console.log('Update handled successfully'))
+        .catch(err => console.error('Error handling update:', err));
     res.sendStatus(200);
 });
 
-app.listen(PORT, () => console.log(`Server is listening on PORT ${PORT}`));
+app.listen(PORT, () => {
+    console.log(`Server is listening on PORT ${PORT}`);
+});
 
 // Ensure polling is disabled by not calling bot.launch()
