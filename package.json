@@ -19,5 +19,8 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.8.1",
     "telegraf": "^4.16.3"
+  },
+  "engines": {
+    "node": "20.15.1"
   }
 }
